@@ -148,7 +148,6 @@ const startMonitoring = async () => {
         isMonitoringActive = true;
         console.log('✅ Monitoring started');
 
-        // Check last saved status and send notification if changed
         let user = await User.findOne({ steamId });
         if (user) {
             const response = await axios.get(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/`, {
@@ -215,3 +214,9 @@ init();
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
+// Restart every 5 minutes
+setTimeout(() => {
+    console.log('🔄 Restarting the server...');
+    process.exit(0);
+}, 5 * 60 * 1000);
