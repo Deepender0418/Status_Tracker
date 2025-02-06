@@ -161,7 +161,7 @@ const monitorStatus = async () => {
 
             console.log(`🔵 User: ${steamUsername} is now ${steamStatus} at ${date} ${time}`);
 
-            sendTelegramMessage(`🚀 ${steamUsername} is now ${steamStatus.toUpperCase()}!`);
+            sendTelegramMessage(`${steamStatus.toUpperCase()}! hu me, huh!! aye bade😤`);
         }
     } catch (error) {
         console.error('❌ Error monitoring status:', error);
