@@ -1,138 +1,226 @@
-const express = require('express'); const dotenv = require('dotenv'); const cors = require('cors'); const mongoose = require('mongoose'); const axios = require('axios'); const { Telegraf } = require('telegraf');
+const express = require('express');
+const dotenv = require('dotenv');
+const cors = require('cors');
+const mongoose = require('mongoose');
+const axios = require('axios');
+const { Telegraf } = require('telegraf');
 
 dotenv.config();
 
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 
-const connectDB = async () => { try { await mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true, serverSelectionTimeoutMS: 10000, }); console.log('✅ MongoDB Connected'); } catch (error) { console.error('❌ MongoDB Connection Error:', error); process.exit(1); } };
+const connectDB = async () => {
+    try {
+        await mongoose.connect(process.env.MONGODB_URI, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+            serverSelectionTimeoutMS: 10000,
+        });
+        console.log('✅ MongoDB Connected');
+    } catch (error) {
+        console.error('❌ MongoDB Connection Error:', error);
+        process.exit(1);
+    }
+};
 
 connectDB();
 
-const app = express(); app.use(cors()); app.use(express.json());
+const app = express();
+app.use(cors());
+app.use(express.json());
 
-const userSchema = new mongoose.Schema({ username: { type: String, required: true }, steamId: { type: String, required: true }, steamStatus: { type: String, enum: ['online', 'offline'], default: 'offline' }, statusHistory: [ { status: { type: String, enum: ['online', 'offline'], required: true }, date: { type: String, required: true }, time: { type: String, required: true } } ] });
+const userSchema = new mongoose.Schema({
+    username: { type: String, required: true },
+    steamId: { type: String, required: true },
+    steamStatus: { type: String, enum: ['online', 'offline'], default: 'offline' },
+    statusHistory: [
+        {
+            status: { type: String, enum: ['online', 'offline'], required: true },
+            date: { type: String, required: true },
+            time: { type: String, required: true }
+        }
+    ]
+});
 
 const User = mongoose.model('User', userSchema);
 
-const resolveSteamId = async (url) => { try { const profileRegex = //profiles/([^/]+)/; const idRegex = //id/([^/]+)/;
-
-if (profileRegex.test(url)) {
-        return url.match(profileRegex)[1];
-    } else if (idRegex.test(url)) {
-        const vanityName = url.match(idRegex)[1];
-        const response = await axios.get(
-            `https://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/`,
-            { params: { key: process.env.STEAM_API_KEY, vanityurl: vanityName } }
-        );
-        if (response.data.response.success === 1) {
-            return response.data.response.steamid;
-        }
-        throw new Error('Vanity URL resolution failed');
-    }
-    throw new Error('Invalid Steam profile URL format');
-} catch (error) {
-    console.error('❌ Error resolving Steam ID:', error);
-    return null;
-}
-
-};
-
-let lastMessageTime = 0; const COOLDOWN = 30 * 1000; const sendTelegramMessage = async (message) => { const now = Date.now(); if (now - lastMessageTime < COOLDOWN) return; lastMessageTime = now;
-
-try {
-    await bot.telegram.sendMessage(process.env.TELEGRAM_CHAT_ID, message);
-    console.log('📩 Telegram message sent:', message);
-} catch (error) {
-    console.error('❌ Error sending Telegram message:', error);
-}
-
-};
-
-let steamId, steamUsername, lastKnownStatus = null; let monitoringInterval = null; let isMonitoringActive = false;
-
-const fetchUsername = async () => { try { const response = await axios.get(https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/, { params: { key: process.env.STEAM_API_KEY, steamids: steamId } });
-
-const player = response.data?.response?.players?.[0];
-    return player?.personaname || 'Tracked User';
-} catch (error) {
-    console.error('❌ Error fetching username:', error);
-    return 'Tracked User';
-}
-
-};
-
-const createUser = async () => { let user = await User.findOne({ steamId });
-
-if (!user) {
-    user = new User({ username: steamUsername, steamId, statusHistory: [] });
+const resolveSteamId = async (url) => {
     try {
-        await user.save();
-        console.log('✅ User created successfully');
+        const profileRegex = /\/profiles\/([^\/]+)/;
+        const idRegex = /\/id\/([^\/]+)/;
+        
+        if (profileRegex.test(url)) {
+            return url.match(profileRegex)[1];
+        } else if (idRegex.test(url)) {
+            const vanityName = url.match(idRegex)[1];
+            const response = await axios.get(
+                `https://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/`,
+                { params: { key: process.env.STEAM_API_KEY, vanityurl: vanityName } }
+            );
+            if (response.data.response.success === 1) {
+                return response.data.response.steamid;
+            }
+            throw new Error('Vanity URL resolution failed');
+        }
+        throw new Error('Invalid Steam profile URL format');
     } catch (error) {
-        console.error('❌ Error creating user:', error);
+        console.error('❌ Error resolving Steam ID:', error);
+        return null;
     }
-} else {
-    console.log('ℹ️ User already exists');
-}
-
 };
 
-const getCurrentDateTime = () => { const now = new Date(); return { date: now.toISOString().split('T')[0], time: new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }).format(now) }; };
-
-const monitorStatus = async () => { try { const response = await axios.get(https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/, { params: { key: process.env.STEAM_API_KEY, steamids: steamId } });
-
-const player = response.data?.response?.players?.[0];
-    if (!player) {
-        console.error('❌ No player data found');
-        return;
+let lastMessageTime = 0;
+const COOLDOWN = 30 * 1000;
+const sendTelegramMessage = async (message) => {
+    const now = Date.now();
+    if (now - lastMessageTime < COOLDOWN) return;
+    lastMessageTime = now;
+    
+    try {
+        await bot.telegram.sendMessage(process.env.TELEGRAM_CHAT_ID, message);
+        console.log('📩 Telegram message sent:', message);
+    } catch (error) {
+        console.error('❌ Error sending Telegram message:', error);
     }
+};
 
-    const user = await User.findOne({ steamId });
+let steamId, steamUsername, lastKnownStatus = null;
+let monitoringInterval = null;
+let isMonitoringActive = false;
+
+const fetchUsername = async () => {
+    try {
+        const response = await axios.get(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/`, {
+            params: { key: process.env.STEAM_API_KEY, steamids: steamId }
+        });
+
+        const player = response.data?.response?.players?.[0];
+        return player?.personaname || 'Tracked User';
+    } catch (error) {
+        console.error('❌ Error fetching username:', error);
+        return 'Tracked User';
+    }
+};
+
+const createUser = async () => {
+    let user = await User.findOne({ steamId });
+    
     if (!user) {
-        console.error('❌ User not found');
-        return;
+        user = new User({ username: steamUsername, steamId, statusHistory: [] });
+        try {
+            await user.save();
+            console.log('✅ User created successfully');
+        } catch (error) {
+            console.error('❌ Error creating user:', error);
+        }
+    } else {
+        console.log('ℹ️ User already exists');
     }
-
-    const steamStatus = player.personastate === 1 ? 'online' : 'offline';
-
-    if (lastKnownStatus !== steamStatus) {
-        lastKnownStatus = steamStatus;
-        const { date, time } = getCurrentDateTime();
-
-        user.statusHistory.push({ status: steamStatus, date, time });
-        user.steamStatus = steamStatus;
-        await user.save();
-
-        console.log(`🔵 User: ${steamUsername} is now ${steamStatus} at ${date} ${time}`);
-
-        sendTelegramMessage(`${steamStatus.toUpperCase()}! hu me, huh!! aye bade😤`);
-    }
-} catch (error) {
-    console.error('❌ Error monitoring status:', error);
-}
-
 };
 
-// Start and stop monitoring functions const startMonitoring = () => { if (!isMonitoringActive) { monitoringInterval = setInterval(monitorStatus, 5000); isMonitoringActive = true; console.log('✅ Monitoring started'); } };
+const getCurrentDateTime = () => {
+    const now = new Date();
+    return {
+        date: now.toISOString().split('T')[0],
+        time: new Intl.DateTimeFormat('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        }).format(now)
+    };
+};
 
-const stopMonitoring = () => { if (isMonitoringActive) { clearInterval(monitoringInterval); isMonitoringActive = false; console.log('⛔ Monitoring stopped'); } };
+const monitorStatus = async () => {
+    try {
+        const response = await axios.get(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/`, {
+            params: { key: process.env.STEAM_API_KEY, steamids: steamId }
+        });
 
-// Telegram Commands bot.command('status', async (ctx) => { const user = await User.findOne({ steamId }); if (!user) return ctx.reply('❌ User not found');
+        const player = response.data?.response?.players?.[0];
+        if (!player) {
+            console.error('❌ No player data found');
+            return;
+        }
 
-ctx.reply(`📊 Status of ${user.username}:\n- Steam: ${user.steamStatus.toUpperCase()}\n- Tracking: ${isMonitoringActive ? '✅ ACTIVE' : '❌ STOPPED'}`);
+        const user = await User.findOne({ steamId });
+        if (!user) {
+            console.error('❌ User not found');
+            return;
+        }
 
+        const steamStatus = player.personastate === 1 ? 'online' : 'offline';
+
+        if (lastKnownStatus !== steamStatus) {
+            lastKnownStatus = steamStatus;
+            const { date, time } = getCurrentDateTime();
+
+            user.statusHistory.push({ status: steamStatus, date, time });
+            user.steamStatus = steamStatus;
+            await user.save();
+
+            console.log(`🔵 User: ${steamUsername} is now ${steamStatus} at ${date} ${time}`);
+
+            sendTelegramMessage(`${steamStatus.toUpperCase()}! hu me, huh!! aye bade😤`);
+        }
+    } catch (error) {
+        console.error('❌ Error monitoring status:', error);
+    }
+};
+
+// Start and stop monitoring functions
+const startMonitoring = () => {
+    if (!isMonitoringActive) {
+        monitoringInterval = setInterval(monitorStatus, 5000);
+        isMonitoringActive = true;
+        console.log('✅ Monitoring started');
+    }
+};
+
+const stopMonitoring = () => {
+    if (isMonitoringActive) {
+        clearInterval(monitoringInterval);
+        isMonitoringActive = false;
+        console.log('⛔ Monitoring stopped');
+    }
+};
+
+// Telegram Commands
+bot.command('status', async (ctx) => {
+    const user = await User.findOne({ steamId });
+    if (!user) return ctx.reply('❌ User not found');
+
+    ctx.reply(`📊 Status of ${user.username}:\n- Steam: ${user.steamStatus.toUpperCase()}\n- Tracking: ${isMonitoringActive ? '✅ ACTIVE' : '❌ STOPPED'}`);
 });
 
-bot.command('start', (ctx) => { startMonitoring(); ctx.reply('✅ Tracking started.'); });
+bot.command('start', (ctx) => {
+    startMonitoring();
+    ctx.reply('✅ Tracking started.');
+});
 
-bot.command('stop', (ctx) => { stopMonitoring(); ctx.reply('⛔ Tracking stopped.'); });
+bot.command('stop', (ctx) => {
+    stopMonitoring();
+    ctx.reply('⛔ Tracking stopped.');
+});
 
-bot.command('restart', (ctx) => { stopMonitoring(); setTimeout(() => startMonitoring(), 2000); ctx.reply('🔄 Tracking restarted.'); });
+bot.command('restart', (ctx) => {
+    stopMonitoring();
+    setTimeout(() => startMonitoring(), 2000);
+    ctx.reply('🔄 Tracking restarted.');
+});
 
-bot.launch(); console.log('🤖 Telegram Bot is running...');
+bot.launch();
+console.log('🤖 Telegram Bot is running...');
 
-const init = async () => { steamId = await resolveSteamId(process.env.STEAM_PROFILE_URL); if (!steamId) return console.error('❌ Failed to resolve Steam ID.'); steamUsername = await fetchUsername(); await createUser(); startMonitoring(); };
+const init = async () => {
+    steamId = await resolveSteamId(process.env.STEAM_PROFILE_URL);
+    if (!steamId) return console.error('❌ Failed to resolve Steam ID.');
+    steamUsername = await fetchUsername();
+    await createUser();
+    startMonitoring();
+};
 
 init();
 
-const PORT = process.env.PORT || 5000; app.listen(PORT, () => console.log(🚀 Server running on port ${PORT}));
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
