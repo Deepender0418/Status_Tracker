@@ -69,13 +69,20 @@ const resolveSteamId = async (url) => {
     }
 };
 
-let lastMessageTime = 0;
-const COOLDOWN = 30 * 1000;
+const getCurrentDateTime = () => {
+    const now = new Date();
+    return {
+        date: now.toISOString().split('T')[0],
+        time: new Intl.DateTimeFormat('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        }).format(now)
+    };
+};
+
 const sendTelegramMessage = async (message) => {
-    const now = Date.now();
-    if (now - lastMessageTime < COOLDOWN) return;
-    lastMessageTime = now;
-    
     try {
         await bot.telegram.sendMessage(process.env.TELEGRAM_CHAT_ID, message);
         console.log('📩 Telegram message sent:', message);
@@ -84,8 +91,7 @@ const sendTelegramMessage = async (message) => {
     }
 };
 
-let steamId, steamUsername, lastKnownStatus = null;
-let monitoringInterval = null;
+let steamId, steamUsername, monitoringInterval = null;
 let isMonitoringActive = false;
 
 const fetchUsername = async () => {
@@ -102,35 +108,6 @@ const fetchUsername = async () => {
     }
 };
 
-const createUser = async () => {
-    let user = await User.findOne({ steamId });
-    
-    if (!user) {
-        user = new User({ username: steamUsername, steamId, statusHistory: [] });
-        try {
-            await user.save();
-            console.log('✅ User created successfully');
-        } catch (error) {
-            console.error('❌ Error creating user:', error);
-        }
-    } else {
-        console.log('ℹ️ User already exists');
-    }
-};
-
-const getCurrentDateTime = () => {
-    const now = new Date();
-    return {
-        date: now.toISOString().split('T')[0],
-        time: new Intl.DateTimeFormat('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: true
-        }).format(now)
-    };
-};
-
 const monitorStatus = async () => {
     try {
         const response = await axios.get(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/`, {
@@ -138,21 +115,14 @@ const monitorStatus = async () => {
         });
 
         const player = response.data?.response?.players?.[0];
-        if (!player) {
-            console.error('❌ No player data found');
-            return;
-        }
+        if (!player) return;
 
-        const user = await User.findOne({ steamId });
-        if (!user) {
-            console.error('❌ User not found');
-            return;
-        }
+        let user = await User.findOne({ steamId });
+        if (!user) return;
 
         const steamStatus = player.personastate === 1 ? 'online' : 'offline';
 
-        if (lastKnownStatus !== steamStatus) {
-            lastKnownStatus = steamStatus;
+        if (user.steamStatus !== steamStatus) {
             const { date, time } = getCurrentDateTime();
 
             user.statusHistory.push({ status: steamStatus, date, time });
@@ -161,19 +131,51 @@ const monitorStatus = async () => {
 
             console.log(`🔵 User: ${steamUsername} is now ${steamStatus} at ${date} ${time}`);
 
-            sendTelegramMessage(`${steamStatus.toUpperCase()}! hu me, huh!! aye bade😤`);
+            const message = steamStatus === "offline"
+                ? `jaa rahi hu me OFFLINE, aye bade😤`
+                : `Aa gyi ONLINE, Tumhare sath nhi khelungi, aye bade😤`;
+
+            sendTelegramMessage(message);
         }
     } catch (error) {
         console.error('❌ Error monitoring status:', error);
     }
 };
 
-// Start and stop monitoring functions
-const startMonitoring = () => {
+const startMonitoring = async () => {
     if (!isMonitoringActive) {
         monitoringInterval = setInterval(monitorStatus, 5000);
         isMonitoringActive = true;
         console.log('✅ Monitoring started');
+
+        // Check last saved status and send notification if changed
+        let user = await User.findOne({ steamId });
+        if (user) {
+            const response = await axios.get(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/`, {
+                params: { key: process.env.STEAM_API_KEY, steamids: steamId }
+            });
+
+            const player = response.data?.response?.players?.[0];
+            if (player) {
+                const currentStatus = player.personastate === 1 ? 'online' : 'offline';
+
+                if (user.steamStatus !== currentStatus) {
+                    const { date, time } = getCurrentDateTime();
+
+                    user.statusHistory.push({ status: currentStatus, date, time });
+                    user.steamStatus = currentStatus;
+                    await user.save();
+
+                    console.log(`🔵 User: ${steamUsername} is now ${currentStatus} at ${date} ${time}`);
+
+                    const message = currentStatus === "offline"
+                        ? `jaa rahi hu me OFFLINE, aye bade😤`
+                        : `Aa gyi ONLINE, Tumhare sath nhi khelungi, aye bade😤`;
+
+                    sendTelegramMessage(message);
+                }
+            }
+        }
     }
 };
 
@@ -185,12 +187,8 @@ const stopMonitoring = () => {
     }
 };
 
-// Telegram Commands
 bot.command('status', async (ctx) => {
-    const user = await User.findOne({ steamId });
-    if (!user) return ctx.reply('❌ User not found');
-
-    ctx.reply(`📊 Status of ${user.username}:\n- Steam: ${user.steamStatus.toUpperCase()}\n- Tracking: ${isMonitoringActive ? '✅ ACTIVE' : '❌ STOPPED'}`);
+    ctx.reply(`📊 Tracking is ${isMonitoringActive ? '✅ ACTIVE' : '❌ STOPPED'}`);
 });
 
 bot.command('start', (ctx) => {
@@ -203,12 +201,6 @@ bot.command('stop', (ctx) => {
     ctx.reply('⛔ Tracking stopped.');
 });
 
-bot.command('restart', (ctx) => {
-    stopMonitoring();
-    setTimeout(() => startMonitoring(), 2000);
-    ctx.reply('🔄 Tracking restarted.');
-});
-
 bot.launch();
 console.log('🤖 Telegram Bot is running...');
 
@@ -216,7 +208,6 @@ const init = async () => {
     steamId = await resolveSteamId(process.env.STEAM_PROFILE_URL);
     if (!steamId) return console.error('❌ Failed to resolve Steam ID.');
     steamUsername = await fetchUsername();
-    await createUser();
     startMonitoring();
 };
 
