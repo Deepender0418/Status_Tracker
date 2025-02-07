@@ -131,6 +131,8 @@ const getCurrentDateTime = () => {
     };
 };
 
+const status = false;
+
 const monitorStatus = async () => {
     try {
         const response = await axios.get(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/`, {
@@ -144,7 +146,8 @@ const monitorStatus = async () => {
         if (lastKnownStatus !== steamStatus) {
             lastKnownStatus = steamStatus;
             const { date, time } = getCurrentDateTime();
-            const message = steamStatus === "offline"
+            status = steamStatus === "offline" ? false : true;
+            const message = status
                 ? `jaa rahi hu me OFFLINE, aye bade😤`
                 : `Aa gyi ONLINE, Tumhare sath nhi khelungi, aye bade😤`;
 
@@ -172,7 +175,7 @@ const stopMonitoring = () => {
 };
 
 bot.command('hola', async (ctx) => {
-    const m = steamStatus === "offline"
+    const m = status
                 ? `Kya h, Busy hu me, aye bade😤`
                 : `Tumhari thoo!!!, game me hu me, aye bade😤`;
     ctx.reply(m);
