@@ -131,7 +131,7 @@ const getCurrentDateTime = () => {
     };
 };
 
-const status = false;
+var status = false;
 
 const monitorStatus = async () => {
     try {
