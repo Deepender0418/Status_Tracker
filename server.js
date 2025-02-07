@@ -146,7 +146,7 @@ const monitorStatus = async () => {
         if (lastKnownStatus !== steamStatus) {
             lastKnownStatus = steamStatus;
             const { date, time } = getCurrentDateTime();
-            status = steamStatus === "offline" ? false : true;
+            status = steamStatus === "offline" ? true : false;
             const message = status
                 ? `jaa rahi hu me OFFLINE, aye bade😤`
                 : `Aa gyi ONLINE, Tumhare sath nhi khelungi, aye bade😤`;
@@ -215,4 +215,5 @@ app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 
 // Pinging system to prevent server from idling
 setInterval(() => {
-    axios.get(`${process.env.SERVER_URL}`,console.log("Pinged the server"))}, 60000);
+    axios.get(`${process.env.SERVER_URL}`,console.log("Pinged the server")).catch(err => console.error(""))}, 60000);
+
