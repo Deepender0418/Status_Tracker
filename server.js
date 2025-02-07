@@ -171,8 +171,11 @@ const stopMonitoring = () => {
     }
 };
 
-bot.command('status', async (ctx) => {
-    ctx.reply(`📊 Status: ${isMonitoringActive ? '✅ Active' : '❌ Stopped'}`);
+bot.command('hola', async (ctx) => {
+    const m = steamStatus === "offline"
+                ? `Kya h, Busy hu me, aye bade😤`
+                : `Tumhari thoo!!!, game me hu me, aye bade😤`;
+    ctx.reply(m);
 });
 
 bot.command('start', (ctx) => {
@@ -209,5 +212,4 @@ app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 
 // Pinging system to prevent server from idling
 setInterval(() => {
-    axios.get(`${process.env.SERVER_URL}`,console.log("Pinged the server")).catch(err => console.error('❌ Pinging error:', err));
-}, 60000);
+    axios.get(`${process.env.SERVER_URL}`,console.log("Pinged the server"))}, 60000);
