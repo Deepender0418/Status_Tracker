@@ -181,14 +181,11 @@ bot.command('hola', async (ctx) => {
     ctx.reply(m);
 });
 
-bot.command('start', (ctx) => {
-    startMonitoring();
-    ctx.reply('✅ Monitoring started');
-});
-
-bot.command('stop', (ctx) => {
-    stopMonitoring();
-    ctx.reply('⛔ Monitoring stopped');
+bot.command('bati', async (ctx) => {
+    const m = status
+                ? `Ale Ale, Bati Bati kalega mela bacha, huh!! nhi karugi`
+                : `Bola to tha game me hu, nhi kar sakti bati bati😤`;
+    ctx.reply(m);
 });
 
 bot.command('restart', (ctx) => {
@@ -215,5 +212,5 @@ app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 
 // Pinging system to prevent server from idling
 setInterval(() => {
-    axios.get(`${process.env.SERVER_URL}`,console.log("Pinged the server")).catch(err => console.error(""))}, 60000);
+    axios.get(`${process.env.SERVER_URL}`)}, 60000);
 
