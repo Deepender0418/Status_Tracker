@@ -212,5 +212,6 @@ app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 
 // Pinging system to prevent server from idling
 setInterval(() => {
-    axios.get(`${process.env.SERVER_URL}`)}, 60000);
+    const m = status ? "Offline" : "Online";
+    axios.get(`${process.env.SERVER_URL}`).catch((err) => console.log(m))}, 60000);
 
