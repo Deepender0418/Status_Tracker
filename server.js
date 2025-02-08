@@ -180,6 +180,7 @@ bot.command('hola', async (ctx) => {
     ctx.reply(m);
 });
 var count = 0;
+var triggered = false;
 bot.command('bati', async (ctx) => {
     var m;
     if(count === 0)
@@ -207,10 +208,20 @@ bot.command('bati', async (ctx) => {
     else 
     {
         m = "💋💋💋";
+        if(triggered === false)
+        {
+            triggered = true;
+        }
     }
     const msg = m;
     ctx.reply(msg);
-    setInterval(() => {count = 0}, 60000);
+    if(triggered === true)
+    {
+        setInterval(() => {
+            count = 0
+            triggered = false;
+        }, 60000);
+    }
 });
 
 bot.command('restart', (ctx) => {
