@@ -148,8 +148,11 @@ const monitorStatus = async () => {
             const { date, time } = getCurrentDateTime();
             status = steamStatus === "offline" ? true : false;
             const message = status
-                ? "Jaa rahi hu me OFFLINE/naye bade😤"
-                : "Aa gyi ONLINE/nTumhare sath nhi khelungi/naye bade😤";
+                ? "Jaa rahi hu me OFFLINE
+                aye bade😤"
+                : "Aa gyi ONLINE
+                Tumhare sath nhi khelungi
+                aye bade😤";
 
             sendTelegramMessage(message);
         }
