@@ -148,8 +148,8 @@ const monitorStatus = async () => {
             const { date, time } = getCurrentDateTime();
             status = steamStatus === "offline" ? true : false;
             const message = status
-                ? `jaa rahi hu me OFFLINE/naye bade😤`
-                : `Aa gyi ONLINE/nTumhare sath nhi khelungi/naye bade😤`;
+                ? "Jaa rahi hu me OFFLINE/naye bade😤"
+                : "Aa gyi ONLINE/nTumhare sath nhi khelungi/naye bade😤";
 
             sendTelegramMessage(message);
         }
@@ -176,15 +176,15 @@ const stopMonitoring = () => {
 
 bot.command('hola', async (ctx) => {
     const m = status
-                ? `Kya h/nBusy hu me/naye bade😤`
-                : `Tumhari thoo!!!/ngame me hu me/naye bade😤`;
+                ? "Kya h/nBusy hu me/naye bade😤"
+                : "Tumhari thoo!!!/ngame me hu me/naye bade😤";
     ctx.reply(m);
 });
 
 bot.command('bati', async (ctx) => {
     const m = status
-                ? `Ale Ale/nBati Bati kalega mela bacha, huh!!/nnhi karugi`
-                : `Bola to tha game me hu/nnhi kar sakti bati bati😤`;
+                ? "Ale Ale/nBati Bati kalega mela bacha, huh!!/nnhi karugi"
+                : "Bola to tha game me hu/nnhi kar sakti bati bati😤";
     ctx.reply(m);
 });
 
