@@ -175,16 +175,40 @@ const stopMonitoring = () => {
 
 bot.command('hola', async (ctx) => {
     const m = status
-                ? "Kya h/\nBusy hu me\naye bade😤"
+                ? "Kya h\nBusy hu me\naye bade😤"
                 : "Tumhari thoo!!!\ngame me hu me\naye bade😤";
     ctx.reply(m);
 });
-
+var count = 0;
 bot.command('bati', async (ctx) => {
+    if(count === 0)
+    {
     const m = status
                 ? "Ale Ale\nBati Bati kalega mela bacha, huh!!\nnhi karugi"
                 : "Bola to tha game me hu\nnhi kar sakti bati bati😤";
+        count++;
+    }
+    else if(count === 1)
+    {
+        const m = "Chuppp😤";
+        count++;
+    }
+    else if(count === 2)
+    {
+        const m = "😤";
+        count++;
+    }
+    else if(count === 3)
+    {
+        const m = "😤😤😤😤\nab agar bola na\nLiplock kardungi";
+        count++;
+    }
+    else 
+    {
+        const m = "💋💋💋";
+    }
     ctx.reply(m);
+    setInterval(() => {count = 0}, 60000);
 });
 
 bot.command('restart', (ctx) => {
