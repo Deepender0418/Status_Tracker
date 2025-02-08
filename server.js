@@ -181,33 +181,35 @@ bot.command('hola', async (ctx) => {
 });
 var count = 0;
 bot.command('bati', async (ctx) => {
+    var m;
     if(count === 0)
     {
-    const m = status
+        m = status
                 ? "Ale Ale\nBati Bati kalega mela bacha, huh!!\nnhi karugi"
                 : "Bola to tha game me hu\nnhi kar sakti bati bati😤";
         count++;
     }
     else if(count === 1)
     {
-        const m = "Chuppp😤";
+        m = "Chuppp😤";
         count++;
     }
     else if(count === 2)
     {
-        const m = "😤";
+        m = "😤";
         count++;
     }
     else if(count === 3)
     {
-        const m = "😤😤😤😤\nab agar bola na\nLiplock kardungi";
+        m = "😤😤😤😤\nab agar bola na\nLiplock kardungi";
         count++;
     }
     else 
     {
-        const m = "💋💋💋";
+        m = "💋💋💋";
     }
-    ctx.reply(m);
+    const msg = m;
+    ctx.reply(msg);
     setInterval(() => {count = 0}, 60000);
 });
 
