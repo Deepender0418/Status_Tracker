@@ -181,48 +181,42 @@ bot.command('hola', async (ctx) => {
 });
 var count = 0;
 var triggered = false;
+
 bot.command('bati', async (ctx) => {
-    var m;
-    if(count === 0)
-    {
+    let m;
+    console.log("count = ", count);
+
+    if (count === 0) {
         m = status
-                ? "Ale Ale\nBati Bati kalega mela bacha, huh!!\nnhi karugi"
-                : "Bola to tha game me hu\nnhi kar sakti bati bati😤";
+            ? "Ale Ale\nBati Bati kalega mela bacha, huh!!\nnhi karugi"
+            : "Bola to tha game me hu\nnhi kar sakti bati bati😤";
         count++;
-    }
-    else if(count === 1)
-    {
+    } else if (count === 1) {
         m = "Chuppp😤";
         count++;
-    }
-    else if(count === 2)
-    {
+    } else if (count === 2) {
         m = "😤";
         count++;
-    }
-    else if(count === 3)
-    {
+    } else if (count === 3) {
         m = "😤😤😤😤\nab agar bola na\nLiplock kardungi";
         count++;
-    }
-    else 
-    {
+    } else {
         m = "💋💋💋";
-        if(triggered === false)
-        {
+        if (!triggered) {
             triggered = true;
+
+            // Reset after 60 seconds
+            setTimeout(() => {
+                count = 0;
+                triggered = false;
+                console.log("Counter reset after 60 seconds");
+            }, 60000);
         }
     }
-    const msg = m;
-    ctx.reply(msg);
-    if(triggered === true)
-    {
-        setInterval(() => {
-            count = 0
-            triggered = false;
-        }, 60000);
-    }
+
+    ctx.reply(m);
 });
+
 
 bot.command('restart', (ctx) => {
     stopMonitoring();
