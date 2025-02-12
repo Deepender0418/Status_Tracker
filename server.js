@@ -197,7 +197,7 @@ bot.launch();
 console.log('🤖 Telegram Bot is running...');
 
 app.get('/status', (req, res) => {
-    ctx.reply("Meri Location loge!!! aye bade");
+    sendTelegramMessage("Meri Location loge!!! aye bade");
     res.json({ status: lastKnownStatus })
 });
 
