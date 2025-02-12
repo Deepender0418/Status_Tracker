@@ -227,6 +227,10 @@ bot.command('restart', (ctx) => {
 bot.launch();
 console.log('🤖 Telegram Bot is running...');
 
+app.get('/status', (req, res) => {
+    res.json({ status: lastKnownStatus });
+});
+
 const init = async () => {
     steamId = await resolveSteamId(process.env.STEAM_PROFILE_URL);
     if (!steamId) return console.error('❌ Failed to resolve Steam ID.');
