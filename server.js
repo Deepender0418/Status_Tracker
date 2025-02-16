@@ -111,21 +111,42 @@ const getCurrentDateTime = () => {
 
 const monitorStatus = async () => {
     try {
-        const response = await axios.get(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/`, {
-            params: { key: process.env.STEAM_API_KEY, steamids: steamId }
-        });
-        const player = response.data?.response?.players?.[0];
-        if (!player) return;
+        const fetchStatus = async () => {
+            const response = await axios.get(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/`, {
+                params: { key: process.env.STEAM_API_KEY, steamids: steamId }
+            });
+            return response.data?.response?.players?.[0]?.personastate === 1 ? 'online' : 'offline';
+        };
 
-        const steamStatus = player.personastate === 1 ? 'online' : 'offline';
-        if (lastKnownStatus !== steamStatus) {
-            lastKnownStatus = steamStatus;
-            sendTelegramMessage(steamStatus === 'offline' ? "Jaa rahi hu me OFFLINE\naye bade😤" : "Aa gyi ONLINE\nTumhare sath nhi khelungi\naye bade😤");
+        const firstCheck = await fetchStatus();
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+        const secondCheck = await fetchStatus();
+
+        if (firstCheck === secondCheck && lastKnownStatus !== firstCheck) {
+            lastKnownStatus = firstCheck;
+            sendTelegramMessage(lastKnownStatus === 'offline' ? 
+                "Jaa rahi hu me OFFLINE\naye bade😤" : 
+                "Aa gyi ONLINE\nTumhare sath nhi khelungi\naye bade😤"
+            );
+
+            // ✅ Update the MongoDB database with the new status
+            const { date, time } = getCurrentDateTime();
+            await User.findOneAndUpdate(
+                { steamId }, 
+                { 
+                    steamStatus: lastKnownStatus,
+                    $push: { statusHistory: { status: lastKnownStatus, date, time } } 
+                },
+                { new: true, upsert: true } // Create user if not found
+            );
+            console.log(`📌 Status updated in DB: ${lastKnownStatus}`);
         }
     } catch (error) {
         console.error('❌ Error monitoring status:', error);
     }
 };
+
+
 
 const startMonitoring = () => {
     if (isMonitoringActive) return;
@@ -143,48 +164,50 @@ const stopMonitoring = () => {
 };
 
 bot.command('hola', (ctx) => ctx.reply(lastKnownStatus === 'offline' ? "Kya h\ngame me nhi hu\nBusy hu me\naye bade😤" : "Tumhari thoo!!!\ngame me hu me\naye bade😤"));
+
+
 let count = 0;
-let triggered = false;
+let batiTimer = null;
 
 bot.command('bati', async (ctx) => {
     let message;
-    
+
     if (lastKnownStatus === 'offline') {
         message = "Bola to tha game me hu\nnhi kar sakti bati bati😤";
     } else {
         switch (count) {
             case 0:
                 message = "Ale Ale\nBati Bati kalega mela bacha, huh!!\nnhi karugi";
-                count++;
                 break;
             case 1:
                 message = "Chuppp😤";
-                count++;
                 break;
             case 2:
                 message = "😤";
-                count++;
                 break;
             case 3:
                 message = "😤😤😤😤\nab agar bola na\nLiplock kardungi";
-                count++;
                 break;
             default:
                 message = "💋💋💋";
-                if (!triggered) {
-                    triggered = true;
-                    setTimeout(() => {
-                        count = 0;
-                        triggered = false;
-                        console.log("Counter reset after 60 seconds");
-                    }, 60000);
-                }
                 break;
         }
+
+        count++;
+
+        // Clear previous timeout if the command is used again before 60 seconds
+        if (batiTimer) clearTimeout(batiTimer);
+
+        // Reset after 60 seconds of inactivity
+        batiTimer = setTimeout(() => {
+            count = 0;
+            sendTelegramMessage("agar baat nhi krni hoti to bulaya mat karo\naye bade!!!");
+        }, 60000);
     }
 
     ctx.reply(message);
 });
+
 
 
 bot.command('restart', (ctx) => {
