@@ -172,7 +172,7 @@ let batiTimer = null;
 bot.command('bati', async (ctx) => {
     let message;
 
-    if (lastKnownStatus === 'offline') {
+    if (lastKnownStatus === 'online') {
         message = "Bola to tha game me hu\nnhi kar sakti bati bati😤";
     } else {
         switch (count) {
