@@ -109,8 +109,6 @@ const getCurrentDateTime = () => {
     };
 };
 
-const axios = require('axios');
-
 const FIVEM_SERVER_IP = process.env.FIVEM_IP;
 const FIVEM_SERVER_PORT = process.env.FIVEM_PORT;
 
