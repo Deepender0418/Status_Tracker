@@ -109,6 +109,37 @@ const getCurrentDateTime = () => {
     };
 };
 
+const axios = require('axios');
+
+const FIVEM_SERVER_IP = process.env.FIVEM_IP;
+const FIVEM_SERVER_PORT = process.env.FIVEM_PORT;
+
+const checkSpecificPlayers = async () => {
+    try {
+        const response = await axios.get(`http://${FIVEM_SERVER_IP}:${FIVEM_SERVER_PORT}/players.json`);
+        const players = response.data;
+        
+        // Players to check
+        const targetPlayers = ["Nancy Roy", "Harley Quinn"];
+        let foundPlayers = [];
+
+        players.forEach(player => {
+            if (targetPlayers.includes(player.name)) {
+                foundPlayers.push(player.name);
+            }
+        });
+
+        if (foundPlayers.length > 0) {
+            return `me hu ${foundPlayers.join(" & ")}.\nor me RP khel rahi hu\naye bade!!!`;
+        } else {
+            return `❌ Not found. Current players: \n${players.map(p => p.name).join("\n") || "No players online."}`;
+        }
+    } catch (error) {
+        console.error('❌ Error fetching FiveM player list:', error);
+        return '⚠️ Error fetching server data.';
+    }
+};
+
 const monitorStatus = async () => {
     try {
         const fetchStatus = async () => {
@@ -215,6 +246,12 @@ bot.command('restart', (ctx) => {
     setTimeout(startMonitoring, 2000);
     ctx.reply('🔄 Monitoring restarted');
 });
+
+bot.command('game', async (ctx) => {
+    const result = await checkSpecificPlayers();
+    ctx.reply(result);
+});
+
 
 bot.launch();
 console.log('🤖 Telegram Bot is running...');
