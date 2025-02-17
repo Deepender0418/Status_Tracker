@@ -4,6 +4,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const axios = require('axios');
 const { Telegraf } = require('telegraf');
+const crypto = require('crypto');
 
 dotenv.config();
 
@@ -34,9 +35,11 @@ const userSchema = new mongoose.Schema({
             date: { type: String, required: true },
             time: { type: String, required: true }
         }
-    ]
+    ],
+    authToken: { type: String, unique: true }
 });
 const User = mongoose.model('User', userSchema);
+const generateToken = () => crypto.randomBytes(16).toString('hex');
 
 const resolveSteamId = async (url) => {
     try {
@@ -255,6 +258,10 @@ bot.launch();
 console.log('🤖 Telegram Bot is running...');
 
 app.get('/status', (req, res) => {
+    const token = req.headers.authorization;
+    if (!token) {
+        return res.status(403).json({ error: 'Unauthorized' });
+    }
     sendTelegramMessage("Meri Location loge!!! aye bade");
     res.json({ status: lastKnownStatus })
 });
