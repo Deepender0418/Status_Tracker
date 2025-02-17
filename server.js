@@ -61,7 +61,7 @@ const resolveSteamId = async (url) => {
 let lastMessageTime = 0;
 const COOLDOWN = 30 * 1000;
 const sendTelegramMessage = async (message) => {
-    if (Date.now() - lastMessageTime < COOLDOWN) return;
+    // if (Date.now() - lastMessageTime < COOLDOWN) return;
     lastMessageTime = Date.now();
     try {
         await bot.telegram.sendMessage(process.env.TELEGRAM_CHAT_ID, message);
@@ -266,9 +266,10 @@ const init = async () => {
     await createUser();
     startMonitoring();
 };
+
 init();
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 
-setInterval(() => axios.get(`${process.env.SERVER_URL}`).catch(() => console.log(lastKnownStatus === 'offline' ? "Offline" : "Online")), 60000);
+setInterval(() => axios.get(`${process.env.SERVER_URL}`).catch(() => console.log(lastKnownStatus)), 60000);
