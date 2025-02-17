@@ -258,10 +258,10 @@ bot.launch();
 console.log('🤖 Telegram Bot is running...');
 
 app.get('/status', (req, res) => {
-    const token = req.headers.authorization;
-    if (!token) {
-        return res.status(403).json({ error: 'Unauthorized' });
-    }
+    // const token = req.headers.authorization;
+    // if (!token) {
+    //     return res.status(403).json({ error: 'Unauthorized' });
+    // }
     sendTelegramMessage("Meri Location loge!!! aye bade");
     res.json({ status: lastKnownStatus })
 });
