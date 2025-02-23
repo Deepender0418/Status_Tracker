@@ -202,7 +202,7 @@ const stopMonitoring = () => {
     console.log('⛔ Monitoring stopped');
 };
 
-const checkSpecificPlayers = async () => {
+const real_check = async () => {
     try {
         const response = await axios.get(`http://${FIVEM_SERVER_IP}:${FIVEM_SERVER_PORT}/players.json`);
         const players = response.data.map(p => p.name);
@@ -235,7 +235,7 @@ const checkSpecificPlayers = async () => {
 };
 
 bot.command('check', async (ctx) => {
-    const result = await checkSpecificPlayers();
+    const result = await real_check();
     ctx.reply(result);
 });
 
