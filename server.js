@@ -38,6 +38,13 @@ const userSchema = new mongoose.Schema({
     ],
     authToken: { type: String, unique: true }
 });
+
+const playerSchema = new mongoose.Schema({
+    name: { type: String, unique: true },
+    lastSeen: { type: Date, default: Date.now }
+});
+const Player = mongoose.model('Player', playerSchema);
+
 const User = mongoose.model('User', userSchema);
 const generateToken = () => crypto.randomBytes(16).toString('hex');
 
@@ -194,6 +201,45 @@ const stopMonitoring = () => {
     isMonitoringActive = false;
     console.log('⛔ Monitoring stopped');
 };
+
+const checkSpecificPlayers = async () => {
+    try {
+        const response = await axios.get(`http://${FIVEM_SERVER_IP}:${FIVEM_SERVER_PORT}/players.json`);
+        const players = response.data.map(p => p.name);
+
+        // Fetch previous players from the database
+        const previousPlayers = await Player.find().select('name -_id');
+        const previousPlayerNames = previousPlayers.map(p => p.name);
+
+        // Retain only players who were in the previous list
+        const retainedPlayers = players.filter(player => previousPlayerNames.includes(player));
+
+        // Update database with new player list (remove old ones)
+        await Player.deleteMany({ name: { $nin: players } }); // Remove players no longer present
+        await Player.updateMany({}, { $set: { lastSeen: new Date() } }); // Update timestamps
+        const newPlayers = players.filter(p => !previousPlayerNames.includes(p));
+
+        // Insert new players into the database
+        if (newPlayers.length > 0) {
+            await Player.insertMany(newPlayers.map(name => ({ name })));
+        }
+
+        return retainedPlayers.length > 0
+            ? `Players retained: ${retainedPlayers.join(", ")}.`
+            : `No retained players.`;
+
+    } catch (error) {
+        console.error('❌ Error fetching FiveM player list:', error);
+        return '⚠️ Error fetching server data.';
+    }
+};
+
+bot.command('check', async (ctx) => {
+    const result = await checkSpecificPlayers();
+    ctx.reply(result);
+});
+
+
 
 bot.command('hola', (ctx) => ctx.reply(lastKnownStatus === 'offline' ? "Kya h\ngame me nhi hu\nBusy hu me\naye bade😤" : "Tumhari thoo!!!\ngame me hu me\naye bade😤"));
 
